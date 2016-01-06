@@ -4,7 +4,7 @@
     "description": "A MPQ reader in PHP",
     "keywords": ["MPQ", "File Management"],
     "homepage": "https://github.com/rogiel/php-mpq",
-    "license": "MIT",
+    "license": "BSD-2.0",
     "authors": [{
         "name": "Rogiel Sulzbach",
         "email": "rogiel@rogiel.com",
