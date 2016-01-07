@@ -29,9 +29,30 @@
 namespace Rogiel\MPQ\Compression;
 
 
+use Rogiel\MPQ\Exception\Compression\InvalidInputDataException;
+
 interface Compression {
 
+	/**
+	 * Compresses a block of data
+	 *
+	 * @param $data string the block of data to be compressed
+	 * @param $length integer the length of the block to be compressed
+	 * @return string the compressed data
+	 *
+	 * @throws InvalidInputDataException if the uncompressed data is invalid and cannot be compressed
+	 */
 	public function compress($data, $length);
+
+	/**
+	 * Decompresses a block of data
+	 *
+	 * @param $data string the block of data to be decompressed
+	 * @param $length integer the length of the block to be decompressed
+	 * @return string the decompressed data
+	 *
+	 * @throws InvalidInputDataException if the compressed data is invalid and cannot be decompressed
+	 */
 	public function decompress($data, $length);
 
 }

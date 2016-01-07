@@ -26,33 +26,10 @@
  * THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-namespace Rogiel\MPQ\Compression;
+namespace Rogiel\MPQ\Exception\Encryption;
 
+use Rogiel\MPQ\Exception\MPQException;
 
-use Rogiel\MPQ\Exception\Compression\InvalidInputDataException;
-
-class DeflateCompression implements Compression {
-
-	/**
-	 * {@inheritdoc}
-	 */
-	public function compress($data, $length) {
-		$output = @gzdeflate(substr($data, 0, $length));
-		if(!is_string($output)) {
-			throw new InvalidInputDataException('The compression input data is invalid.', $output);
-		}
-		return $output;
-	}
-
-	/**
-	 * {@inheritdoc}
-	 */
-	public function decompress($data, $length) {
-		$output = @gzinflate(substr($data, 0, $length), $length);
-		if(!is_string($output)) {
-			throw new InvalidInputDataException('The decompression input data is invalid.', $output);
-		}
-		return $output;
-	}
+class EncryptionException extends MPQException {
 
 }

@@ -26,33 +26,57 @@
  * THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-namespace Rogiel\MPQ\Compression;
+namespace Rogiel\MPQ\Tests\Stream\Parser;
 
 
-use Rogiel\MPQ\Exception\Compression\InvalidInputDataException;
+use Rogiel\MPQ\Tests\AbstractTestCase;
 
-class DeflateCompression implements Compression {
+class BinaryStreamParserTest extends AbstractTestCase {
 
-	/**
-	 * {@inheritdoc}
-	 */
-	public function compress($data, $length) {
-		$output = @gzdeflate(substr($data, 0, $length));
-		if(!is_string($output)) {
-			throw new InvalidInputDataException('The compression input data is invalid.', $output);
-		}
-		return $output;
+	public function testReadByte() {
+		$parser = $this->createMemoryParser(
+			hex2bin("00FF")
+		);
+		$this->assertEquals(0x00, $parser->readByte());
+		$this->assertEquals(0xFF, $parser->readByte());
 	}
 
-	/**
-	 * {@inheritdoc}
-	 */
-	public function decompress($data, $length) {
-		$output = @gzinflate(substr($data, 0, $length), $length);
-		if(!is_string($output)) {
-			throw new InvalidInputDataException('The decompression input data is invalid.', $output);
-		}
-		return $output;
+	public function testReadBytes() {
+		$parser = $this->createMemoryParser(
+			hex2bin("00FF")
+		);
+		$this->assertEquals(hex2bin("00FF"), $parser->readBytes(2));
 	}
+
+	public function testReadUInt32() {
+		$parser = $this->createMemoryParser(
+			hex2bin("0000BEEF")
+		);
+		$this->assertEquals(4022206464, $parser->readUInt32());
+	}
+
+	public function testReadUInt16() {
+		$parser = $this->createMemoryParser(
+			hex2bin("0E0A")
+		);
+		$this->assertEquals(2574, $parser->readUInt16());
+	}
+
+	public function testSkip() {
+		$parser = $this->createMemoryParser(
+			hex2bin("DEADBEEF")
+		);
+		$parser->skip(2);
+		$this->assertEquals(0xBE, $parser->readByte());
+	}
+
+	public function testSeek() {
+		$parser = $this->createMemoryParser(
+			hex2bin("DEADBEEF")
+		);
+		$parser->seek(3);
+		$this->assertEquals(0xEF, $parser->readByte());
+	}
+
 
 }

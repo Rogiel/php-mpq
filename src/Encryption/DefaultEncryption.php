@@ -29,56 +29,96 @@
 namespace Rogiel\MPQ\Encryption;
 
 
+use Rogiel\MPQ\Exception\Encryption\InvalidBlockSizeException;
+use Rogiel\MPQ\Exception\Encryption\InvalidKeyException;
 use Rogiel\MPQ\Util\CryptoUtils;
 
 class DefaultEncryption implements Encryption {
 
+	/**
+	 * The encryption/decryption key
+	 *
+	 * @var string
+	 */
 	private $key;
+
+	/**
+	 * The encryption/decryption seed
+	 *
+	 * @var string
+	 */
 	private $seed;
 
+	/**
+	 * DefaultEncryption constructor.
+	 * @param $key string the encryption key. The key must have exactly 10 bytes
+	 */
 	public function __construct($key) {
-		$this->key = $key;
-		$this->seed = ((0xEEEE << 16) | 0xEEEE);
 		CryptoUtils::initTable();
+		$this->reset($key);
 	}
 
+	/**
+	 * {@inheritdoc}
+	 */
 	public function reset($key) {
+		if(strlen($key) != 10) {
+			throw new InvalidKeyException(sprintf('The key is expected to have 10 bytes, %i given.', strlen($key)));
+		}
+
 		$this->key = $key;
 		$this->seed = ((0xEEEE << 16) | 0xEEEE);
 	}
 
+	/**
+	 * {@inheritdoc}
+	 */
 	public function decrypt($string, $length) {
+		if($length % 4 != 0) {
+			throw new InvalidBlockSizeException(sprintf('The block size is invalid. Input expected to be a multiple of 4, %s given', $length));
+		}
+
 		$data = $this->createBlockArray($string, $length);
 
-		$datalen = $length / 4;
-		for($i = 0;$i < $datalen;$i++) {
+		$blocks = $length / 4;
+		for($block = 0;$block < $blocks; $block++) {
 			$this->seed = CryptoUtils::uPlus($this->seed,CryptoUtils::$cryptTable[0x400 + ($this->key & 0xFF)]);
-			$ch = $data[$i] ^ (CryptoUtils::uPlus($this->key,$this->seed));
+			$ch = $data[$block] ^ (CryptoUtils::uPlus($this->key,$this->seed));
 
 			$this->key = (CryptoUtils::uPlus(((~$this->key) << 0x15), 0x11111111)) | (CryptoUtils::rShift($this->key,0x0B));
 			$this->seed = CryptoUtils::uPlus(CryptoUtils::uPlus(CryptoUtils::uPlus($ch,$this->seed),($this->seed << 5)),3);
-			$data[$i] = $ch & ((0xFFFF << 16) | 0xFFFF);
+			$data[$block] = $ch & ((0xFFFF << 16) | 0xFFFF);
 		}
 		
-		return $this->createDataStream($data, $length / 4);
+		return $this->createDataStream($data, $length);
 	}
 
-	public function encrypt($data, $length) {
-		$key = clone $this->key;
-
-		$seed = ((0xEEEE << 16) | 0xEEEE);
-		$datalen = $length;
-		for($i = 0;$i < $datalen;$i++) {
-			$seed = CryptoUtils::uPlus($seed,CryptoUtils::$cryptTable[0x400 + ($key & 0xFF)]);
-			$ch = $data[$i] ^ (CryptoUtils::uPlus($key,$seed));
-
-			$key = (CryptoUtils::uPlus(((~$key) << 0x15), 0x11111111)) | (CryptoUtils::rShift($key,0x0B));
-			$seed = CryptoUtils::uPlus(CryptoUtils::uPlus(CryptoUtils::uPlus($data[$i],$seed),($seed << 5)),3);
-			$data[$i] = $ch & ((0xFFFF << 16) | 0xFFFF);
+	/**
+	 * {@inheritdoc}
+	 */
+	public function encrypt($string, $length) {
+		if($length % 4 != 0) {
+			throw new InvalidBlockSizeException(sprintf('The block size is invalid. Input expected to be a multiple of 4, %s given', $length));
 		}
-		return $data;
+
+		$data = $this->createBlockArray($string, $length);
+
+		$blocks = $length / 4;
+		for($block = 0;$block < $blocks; $block++) {
+			$this->seed = CryptoUtils::uPlus($this->seed,CryptoUtils::$cryptTable[0x400 + ($this->key & 0xFF)]);
+			$ch = $data[$block] ^ (CryptoUtils::uPlus($this->key,$this->seed));
+
+			$this->key = (CryptoUtils::uPlus(((~$this->key) << 0x15), 0x11111111)) | (CryptoUtils::rShift($this->key,0x0B));
+			$this->seed = CryptoUtils::uPlus(CryptoUtils::uPlus(CryptoUtils::uPlus($data[$block],$this->seed),($this->seed << 5)),3);
+			$data[$block] = $ch & ((0xFFFF << 16) | 0xFFFF);
+		}
+
+		return $this->createDataStream($data, $length);
 	}
 
+	/**
+	 * {@inheritdoc}
+	 */
 	public function getBlockSize() {
 		return 4;
 	}

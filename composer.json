@@ -15,7 +15,15 @@
             "Rogiel\\MPQ\\": "src/"
         }
     },
+    "autoload-dev": {
+        "psr-4": {
+            "Rogiel\\MPQ\\Tests\\": "tests/"
+        }
+    },
     "require": {
         "php": ">=5.4"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^4.8.1"
     }
 }

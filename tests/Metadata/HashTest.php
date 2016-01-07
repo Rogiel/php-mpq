@@ -26,33 +26,29 @@
  * THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-namespace Rogiel\MPQ\Compression;
+namespace Rogiel\MPQ\Tests\Metadata;
 
 
-use Rogiel\MPQ\Exception\Compression\InvalidInputDataException;
+use Rogiel\MPQ\Metadata\Hash;
+use Rogiel\MPQ\Tests\AbstractTestCase;
 
-class DeflateCompression implements Compression {
+class HashTest extends AbstractTestCase {
 
-	/**
-	 * {@inheritdoc}
-	 */
-	public function compress($data, $length) {
-		$output = @gzdeflate(substr($data, 0, $length));
-		if(!is_string($output)) {
-			throw new InvalidInputDataException('The compression input data is invalid.', $output);
-		}
-		return $output;
-	}
+	const TEST_HASH_DATA =
+		"10200000". /* name 1 */
+		"00001000". /* name 2 */
+		"00001000". /* locale/platform */
+		"DEAD0000"; /* block index */
 
-	/**
-	 * {@inheritdoc}
-	 */
-	public function decompress($data, $length) {
-		$output = @gzinflate(substr($data, 0, $length), $length);
-		if(!is_string($output)) {
-			throw new InvalidInputDataException('The decompression input data is invalid.', $output);
-		}
-		return $output;
+	public function testParse() {
+		$parser = $this->createMemoryParser(hex2bin(self::TEST_HASH_DATA));
+		$hash = Hash::parse($parser);
+
+		$this->assertEquals(8208, $hash->getName1());
+		$this->assertEquals(1048576, $hash->getName2());
+		$this->assertEquals(0, $hash->getLocale());
+		$this->assertEquals(16, $hash->getPlatform());
+		$this->assertEquals(44510, $hash->getBlockIndex());
 	}
 
 }

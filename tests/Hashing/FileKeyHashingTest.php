@@ -26,33 +26,38 @@
  * THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-namespace Rogiel\MPQ\Compression;
+namespace Rogiel\MPQ\Tests\Hashing;
 
 
-use Rogiel\MPQ\Exception\Compression\InvalidInputDataException;
+use Rogiel\MPQ\Hashing\FileKeyHashing;
+use Rogiel\MPQ\Hashing\Hashing;
+use Rogiel\MPQ\Tests\AbstractTestCase;
 
-class DeflateCompression implements Compression {
+class FileKeyHashingTest extends AbstractTestCase {
 
 	/**
-	 * {@inheritdoc}
+	 * @var Hashing
 	 */
-	public function compress($data, $length) {
-		$output = @gzdeflate(substr($data, 0, $length));
-		if(!is_string($output)) {
-			throw new InvalidInputDataException('The compression input data is invalid.', $output);
-		}
-		return $output;
+	private $hashing;
+
+	public function setUp() {
+		$this->hashing = new FileKeyHashing();
 	}
 
-	/**
-	 * {@inheritdoc}
-	 */
-	public function decompress($data, $length) {
-		$output = @gzinflate(substr($data, 0, $length), $length);
-		if(!is_string($output)) {
-			throw new InvalidInputDataException('The decompression input data is invalid.', $output);
-		}
-		return $output;
+	const TEST_PLAIN_TEXT = "b99cb06efcddccdf861494b2b431a592";
+	const TEST_HASHED_TEXT = 3812245591;
+
+	public function testHash() {
+		$hash = $this->hashing->hash(hex2bin(self::TEST_PLAIN_TEXT));
+		$this->assertEquals(self::TEST_HASHED_TEXT, $hash);
+	}
+
+	const TEST_EMPTY_TEXT = "";
+	const TEST_HASHED_EMPTY = 2146271213;
+
+	public function testEmptyHash() {
+		$hash = $this->hashing->hash(hex2bin(self::TEST_EMPTY_TEXT));
+		$this->assertEquals(self::TEST_HASHED_EMPTY, $hash);
 	}
 
 }

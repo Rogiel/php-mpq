@@ -28,14 +28,47 @@
 
 namespace Rogiel\MPQ\Encryption;
 
+use Rogiel\MPQ\Exception\Encryption\InvalidBlockSizeException;
+use Rogiel\MPQ\Exception\Encryption\InvalidKeyException;
 
 interface Encryption {
 
+	/**
+	 * Resets the encryption context
+	 *
+	 * @param $key string the new encryption key
+	 *
+	 * @throws InvalidKeyException if the given key is invalid
+	 */
 	public function reset($key);
 
+	/**
+	 * Encrypts a block of data
+	 *
+	 * @param $data string the data block
+	 * @param $length integer the data block size
+	 * @return string the encrypted block
+	 *
+	 * @throws InvalidBlockSizeException if the block size is incorrect
+	 */
 	public function encrypt($data, $length);
+
+	/**
+	 * Decrypts a block of data
+	 *
+	 * @param $data string the data block
+	 * @param $length integer the data block size
+	 * @return string the decrypted block
+	 *
+	 * @throws InvalidBlockSizeException if the block size is incorrect
+	 */
 	public function decrypt($data, $length);
 
+	/**
+	 * Gets the cipher block size
+	 *
+	 * @return integer
+	 */
 	public function getBlockSize();
 
 }

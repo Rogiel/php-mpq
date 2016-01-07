@@ -62,9 +62,6 @@ class Hash {
 		$hash->name1 = $parser->readUInt32();
 		$hash->name2 = $parser->readUInt32();
 		$hash->locale = $parser->readUInt16();
-//		echo $hash->locale;
-//		die();
-
 		$hash->platform = $parser->readUInt16();
 		$hash->blockIndex = $parser->readUInt32();
 

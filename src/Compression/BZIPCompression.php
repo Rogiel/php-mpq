@@ -29,14 +29,30 @@
 namespace Rogiel\MPQ\Compression;
 
 
+use Rogiel\MPQ\Exception\Compression\InvalidInputDataException;
+
 class BZIPCompression implements Compression {
 
+	/**
+	 * {@inheritdoc}
+	 */
 	public function compress($data, $length) {
-		return bzcompress(substr($data, 0, $length));
+		$output = @bzcompress(substr($data, 0, $length));
+		if(!is_string($output)) {
+			throw new InvalidInputDataException('The compression input data is invalid.', $output);
+		}
+		return $output;
 	}
 
+	/**
+	 * {@inheritdoc}
+	 */
 	public function decompress($data, $length) {
-		return bzdecompress(substr($data, 0, $length));
+		$output = @bzdecompress(substr($data, 0, $length));
+		if(!is_string($output)) {
+			throw new InvalidInputDataException('The decompression input data is invalid.', $output);
+		}
+		return $output;
 	}
 
 }

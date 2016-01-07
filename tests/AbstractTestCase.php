@@ -26,33 +26,17 @@
  * THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-namespace Rogiel\MPQ\Compression;
+namespace Rogiel\MPQ\Tests;
 
 
-use Rogiel\MPQ\Exception\Compression\InvalidInputDataException;
+use Rogiel\MPQ\Stream\MemoryStream;
+use Rogiel\MPQ\Stream\Parser\BinaryStreamParser;
 
-class DeflateCompression implements Compression {
+abstract class AbstractTestCase extends \PHPUnit_Framework_TestCase {
 
-	/**
-	 * {@inheritdoc}
-	 */
-	public function compress($data, $length) {
-		$output = @gzdeflate(substr($data, 0, $length));
-		if(!is_string($output)) {
-			throw new InvalidInputDataException('The compression input data is invalid.', $output);
-		}
-		return $output;
-	}
-
-	/**
-	 * {@inheritdoc}
-	 */
-	public function decompress($data, $length) {
-		$output = @gzinflate(substr($data, 0, $length), $length);
-		if(!is_string($output)) {
-			throw new InvalidInputDataException('The decompression input data is invalid.', $output);
-		}
-		return $output;
+	protected function createMemoryParser($string) {
+		$stream = new MemoryStream($string);
+		return new BinaryStreamParser($stream);
 	}
 
 }
