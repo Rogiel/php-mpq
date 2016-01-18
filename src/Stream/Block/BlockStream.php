@@ -30,6 +30,8 @@ namespace Rogiel\MPQ\Stream\Block;
 
 
 use Rogiel\MPQ\Compression\BZIPCompression;
+use Rogiel\MPQ\Compression\DeflateCompression;
+use Rogiel\MPQ\Exception\Compression\CompressionException;
 use Rogiel\MPQ\Metadata\Block;
 use Rogiel\MPQ\MPQFile;
 use Rogiel\MPQ\Stream\CompressedStream;
@@ -93,6 +95,7 @@ class BlockStream implements Stream {
 		$this->position = 0;
 		$this->buffer = NULL;
 		$this->currentSector = $this->sectors[0];
+		$this->positionInSector = 0;
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
@@ -113,8 +116,9 @@ class BlockStream implements Stream {
 			$bytes = $this->block->getSize() - $this->position;
 		}
 
-		if($this->buffer == NULL) {
+		if($this->buffer === NULL) {
 			$this->buffer = $this->readSector($this->currentSector);
+			$this->positionInSector = 0;
 		} else if($this->positionInSector >= strlen($this->buffer)) {
 			$this->currentSector = $this->sectors[$this->currentSector->getIndex() + 1];
 			$this->buffer = $this->readSector($this->currentSector);
@@ -163,27 +167,19 @@ class BlockStream implements Stream {
 
 	private function createCompressedStream() {
 		$stream = $this->stream;
-		if($this->block->isCompressed()) {
+
+		if($this->block->isCompressed() && $this->block->getSize() > $this->block->getCompressedSize()) {
 			$parser = new BinaryStreamParser($this->stream);
 			$compressionType = $parser->readByte();
 			switch ($compressionType) {
-				case 0x10:
-					return new CompressedStream($stream, new BZIPCompression());
-					break;
+				case 0x00: return $stream;
+				case 0x02: return new CompressedStream($stream, new DeflateCompression());
+				case 0x10: return new CompressedStream($stream, new BZIPCompression());
+				default:
+					throw new CompressionException(sprintf('Invalid compression format: %s', $compressionType));
 			}
 		}
 		return $stream;
-	}
-
-	private function computeSectors($start, $length) {
-		$sectors = array();
-		foreach($this->sectors as $sector) {
-			/** @var $sector Sector */
-			if($sector->contains($start, $length)) {
-				$sectors[] = $sector;
-			}
-		}
-		return $sectors;
 	}
 
 }
