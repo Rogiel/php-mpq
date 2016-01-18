@@ -77,4 +77,11 @@ class MemoryStream implements Stream {
 		$this->pointer += $position;
 	}
 
+	/**
+	 * {@inheritdoc}
+	 */
+	public function eof() {
+		return strlen($this->data) >= $this->pointer;
+	}
+
 }

@@ -86,4 +86,11 @@ class CompressedStream implements Stream{
 		$this->stream->skip($position);
 	}
 
+	/**
+	 * {@inheritdoc}
+	 */
+	public function eof() {
+		return $this->stream->eof();
+	}
+
 }

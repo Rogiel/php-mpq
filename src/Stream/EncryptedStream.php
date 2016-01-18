@@ -107,4 +107,11 @@ class EncryptedStream implements Stream{
 		$this->bufferPointer = 0xFF;
 	}
 
+	/**
+	 * {@inheritdoc}
+	 */
+	public function eof() {
+		return $this->stream->eof();
+	}
+
 }

@@ -106,7 +106,7 @@ class BlockStream implements Stream {
 	}
 
 	public function readBytes($bytes) {
-		if($this->position >= $this->block->getSize()) {
+		if($this->eof()) {
 			return false;
 		}
 		if(($this->position + $bytes) > $this->block->getSize()) {
@@ -144,6 +144,10 @@ class BlockStream implements Stream {
 			throw new \RuntimeException("Seek is not supported on compressed streams");
 		}
 		$this->position += $bytes;
+	}
+
+	public function eof() {
+		return $this->position >= $this->block->getSize();
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------

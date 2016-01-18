@@ -69,4 +69,8 @@ class BinaryStreamParser {
 		return $this->stream->readBytes($size);
 	}
 
+	public function eof() {
+		return $this->stream->eof();
+	}
+
 }

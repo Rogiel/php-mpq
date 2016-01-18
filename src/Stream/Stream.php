@@ -64,4 +64,11 @@ interface Stream {
 	 */
 	public function skip($bytes);
 
+	/**
+	 * Checks if the stream has already reached the EOF
+	 *
+	 * @return boolean if the end of file has been reached
+	 */
+	public function eof();
+
 }

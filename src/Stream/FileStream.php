@@ -77,6 +77,13 @@ class FileStream implements Stream {
 		fseek($this->handle, $position, SEEK_CUR);
 	}
 
+	/**
+	 * {@inheritdoc}
+	 */
+	public function eof() {
+		return feof($this->handle);
+	}
+
 	// -----------------------------------------------------------------------------------------------------------------
 
 	public function __clone() {
