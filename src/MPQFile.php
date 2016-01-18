@@ -53,6 +53,11 @@ class MPQFile {
 	private $stream;
 
 	/**
+	 * @var boolean
+	 */
+	private $parsed;
+
+	/**
 	 * @var UserData
 	 */
 	private $userData;
@@ -74,18 +79,25 @@ class MPQFile {
 
 	public function __construct(Stream $stream) {
 		$this->stream = $stream;
-		$this->parse();
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private function parse() {
+	public function isParsed() {
+		return $this->parsed;
+	}
+
+	public function parse() {
+		if($this->isParsed()) {
+			return;
+		}
+
 		$parser = new BinaryStreamParser($this->stream);
 
 		$signature = $this->parseSignature($parser);
 		if($signature == "MPQ27") {
 			$this->userData = UserData::parse($parser);
-			$this->stream->seek($this->userData->getHeaderOffset());
+			$this->stream->seek($this->getUserDataOffset());
 		}
 
 		$signature = $this->parseSignature($parser);
@@ -95,15 +107,17 @@ class MPQFile {
 
 		$this->hashTable = $this->parseHashTable();
 		$this->blockTable = $this->parseBlockTable();
+
+		$this->parsed = true;
 	}
 
 	private function parseHashTable() {
 		$hashing = new FileKeyHashing();
 		$encryptedStream = new EncryptedStream($this->stream, new DefaultEncryption($hashing->hash('(hash table)')));
 		$parser = new BinaryStreamParser($encryptedStream);
-		$parser->seek($this->userData->getHeaderOffset() + $this->header->getHashTablePos());
+		$parser->seek($this->getUserDataOffset() + $this->getHeader()->getHashTablePos());
 		$hashes = array();
-		for($i = 0; $i<$this->header->getHashTableSize(); $i++) {
+		for($i = 0; $i<$this->getHeader()->getHashTableSize(); $i++) {
 			$hashes[$i] = Hash::parse($parser);
 		}
 		return new HashTable($hashes);
@@ -113,10 +127,15 @@ class MPQFile {
 		$hashing = new FileKeyHashing();
 		$encryptedStream = new EncryptedStream($this->stream, new DefaultEncryption($hashing->hash('(block table)')));
 		$parser = new BinaryStreamParser($encryptedStream);
-		$parser->seek($this->userData->getHeaderOffset() + $this->header->getBlockTablePos());
+		$parser->seek($this->getUserDataOffset() + $this->getHeader()->getBlockTablePos());
 		$blocks = array();
-		for($i = 0; $i<$this->header->getBlockTableSize(); $i++) {
-			$blocks[$i] = Block::parse($parser);
+
+		$offsetFix = 0;
+		for($i = 0; $i<$this->getHeader()->getBlockTableSize(); $i++) {
+			$block = $blocks[$i - $offsetFix] = Block::parse($parser);
+			if($block->getSize() == 0) {
+				$offsetFix++;
+			}
 		}
 		return new BlockTable($blocks);
 	}
@@ -132,6 +151,16 @@ class MPQFile {
 
 	// -----------------------------------------------------------------------------------------------------------------
 
+	private function getUserDataOffset() {
+		$userData = $this->getUserData();
+		if($userData === null) {
+			return 0;
+		}
+		return $userData->getHeaderOffset();
+	}
+
+	// -----------------------------------------------------------------------------------------------------------------
+
 	/**
 	 * @param $fileName
 	 * @return null|Hash
@@ -143,7 +172,7 @@ class MPQFile {
 		$hashA = $hashingA->hash($fileName);
 		$hashB = $hashingB->hash($fileName);
 
-		return $this->hashTable->findHashByHash($hashA, $hashB);
+		return $this->getHashTable()->findHashByHash($hashA, $hashB);
 	}
 
 	/**
@@ -165,7 +194,7 @@ class MPQFile {
 		}
 
 		$stream = clone $this->stream;
-		$stream->seek($this->userData->getHeaderOffset() + $block->getFilePos());
+		$stream->seek($this->getUserDataOffset() + $block->getFilePos());
 		$parser = new BinaryStreamParser($stream);
 
 		$sectors = array();
@@ -173,11 +202,22 @@ class MPQFile {
 			$blockSize = $block->getCompressedSize();
 			$fileSize  = $block->getSize();
 
-			for ($i = $fileSize;$i > 0;$i -= $this->header->getBlockSize()) {
+			print_r($this->getBlockTable()->getBlocks());
+
+//			print_r($block);
+//			echo $block->isExisting() ? "true" : "false";
+//			echo "\n";
+//
+//			echo $fileSize."\n";
+//			echo $this->getHeader()->getBlockSize()."\n";
+
+			for ($i = $fileSize; $i > 0; $i -= $blockSize) {
+				echo $i;
 				$sectors[] = $parser->readUInt32();
 				$blockSize -= 4;
 			}
-			$sectors[] = $parser->readUInt32();
+			print_r($sectors);
+//			$sectors[] = $parser->readUInt32();
 		} else {
 			$sectors = array(
 				0,
