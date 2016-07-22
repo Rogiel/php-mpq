@@ -42,18 +42,17 @@ abstract class BaseHashing implements Hashing {
 
 	public function hash($string) {
 		$seed1 = 0x7FED7FED;
-		$seed2 = ((0xEEEE << 16) | 0xEEEE);
+		$seed2 = 0xEEEEEEEE;
 		$strLen = strlen($string);
 
 		for ($i = 0;$i < $strLen;$i++) {
 			$next = ord(strtoupper(substr($string, $i, 1)));
 
-			$seed1 = CryptoUtils::$cryptTable[($this->hashType << 8) + $next] ^ (CryptoUtils::uPlus($seed1,$seed2));
-			$seed2 = CryptoUtils::uPlus(CryptoUtils::uPlus(CryptoUtils::uPlus(CryptoUtils::uPlus($next,$seed1),$seed2),$seed2 << 5),3);
+			$seed1 = CryptoUtils::$cryptTable[($this->hashType << 8) + $next] ^ (CryptoUtils::uPlus($seed1,$seed2)) & 0xFFFFFFFF;
+			$seed2 = CryptoUtils::uPlus(CryptoUtils::uPlus(CryptoUtils::uPlus(CryptoUtils::uPlus($next,$seed1),$seed2),$seed2 << 5),3) & 0xFFFFFFFF;
 		}
 		return $seed1;
 	}
-
 
 // function that adds up two integers without allowing them to overflow to floats
 	private function uPlus($o1, $o2) {

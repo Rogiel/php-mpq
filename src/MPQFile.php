@@ -130,12 +130,12 @@ class MPQFile {
 		$parser->seek($this->getUserDataOffset() + $this->getHeader()->getBlockTablePos());
 		$blocks = array();
 
-		$offsetFix = 0;
+//		$offsetFix = 0;
 		for($i = 0; $i<$this->getHeader()->getBlockTableSize(); $i++) {
-			$block = $blocks[$i - $offsetFix] = Block::parse($parser);
-			if($block->getSize() == 0) {
-				$offsetFix++;
-			}
+			$block = $blocks[$i] = Block::parse($parser);
+//			if($block->getSize() == 0) {
+//				$offsetFix++;
+//			}
 		}
 		return new BlockTable($blocks);
 	}
@@ -184,6 +184,7 @@ class MPQFile {
 		if($hash == NULL) {
 			return NULL;
 		}
+
 		return $this->getBlockTable()->getBlock($hash->getBlockIndex());
 	}
 
@@ -202,22 +203,11 @@ class MPQFile {
 			$blockSize = $block->getCompressedSize();
 			$fileSize  = $block->getSize();
 
-			print_r($this->getBlockTable()->getBlocks());
-
-//			print_r($block);
-//			echo $block->isExisting() ? "true" : "false";
-//			echo "\n";
-//
-//			echo $fileSize."\n";
-//			echo $this->getHeader()->getBlockSize()."\n";
-
 			for ($i = $fileSize; $i > 0; $i -= $blockSize) {
-				echo $i;
 				$sectors[] = $parser->readUInt32();
 				$blockSize -= 4;
 			}
-			print_r($sectors);
-//			$sectors[] = $parser->readUInt32();
+			$sectors[] = $parser->readUInt32();
 		} else {
 			$sectors = array(
 				0,
