@@ -69,6 +69,17 @@ class BinaryStreamParser {
 		return $this->stream->readBytes($size);
 	}
 
+	public function readCString($debug=false) {
+	    $str = '';
+	    while(true) {
+	        $c = $this->stream->readBytes(1);
+            if($c == "\0") {
+                return $str;
+            }
+            $str .= (string) $c;
+        }
+    }
+
 	public function eof() {
 		return $this->stream->eof();
 	}

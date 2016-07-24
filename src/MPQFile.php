@@ -81,6 +81,10 @@ class MPQFile {
 		$this->stream = $stream;
 	}
 
+    function __destruct() {
+        $this->stream->close();
+    }
+
 	// -----------------------------------------------------------------------------------------------------------------
 
 	public function isParsed() {
@@ -98,9 +102,10 @@ class MPQFile {
 		if($signature == "MPQ27") {
 			$this->userData = UserData::parse($parser);
 			$this->stream->seek($this->getUserDataOffset());
+
+            $signature = $this->parseSignature($parser);
 		}
 
-		$signature = $this->parseSignature($parser);
 		if($signature == "MPQ26") {
 			$this->header = Header::parse($parser);
 		}
@@ -137,6 +142,7 @@ class MPQFile {
 //				$offsetFix++;
 //			}
 		}
+
 		return new BlockTable($blocks);
 	}
 
@@ -151,7 +157,7 @@ class MPQFile {
 
 	// -----------------------------------------------------------------------------------------------------------------
 
-	private function getUserDataOffset() {
+	public function getUserDataOffset() {
 		$userData = $this->getUserData();
 		if($userData === null) {
 			return 0;
@@ -200,7 +206,7 @@ class MPQFile {
 
 		$sectors = array();
 		if($block->isChecksumed() || !$block->isSingleUnit()) {
-			$blockSize = $block->getCompressedSize();
+			$blockSize = 512 * (1 << $this->getHeader()->getBlockSize());
 			$fileSize  = $block->getSize();
 
 			for ($i = $fileSize; $i > 0; $i -= $blockSize) {

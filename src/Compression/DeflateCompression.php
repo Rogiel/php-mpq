@@ -49,7 +49,7 @@ class DeflateCompression implements Compression {
 	 */
 	public function decompress($data, $length) {
 		$output = @gzinflate(substr($data, 0, $length), $length);
-		if(!is_string($output)) {
+		if($output === false) {
 			throw new InvalidInputDataException('The decompression input data is invalid.', $output);
 		}
 		return $output;

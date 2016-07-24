@@ -35,6 +35,7 @@ use Rogiel\MPQ\Exception\Compression\CompressionException;
 use Rogiel\MPQ\Metadata\Block;
 use Rogiel\MPQ\MPQFile;
 use Rogiel\MPQ\Stream\CompressedStream;
+use Rogiel\MPQ\Stream\MemoryStream;
 use Rogiel\MPQ\Stream\Parser\BinaryStreamParser;
 use Rogiel\MPQ\Stream\Stream;
 
@@ -109,7 +110,7 @@ class BlockStream implements Stream {
 	}
 
 	public function readBytes($bytes) {
-		if($this->eof()) {
+	    if($this->eof()) {
 			return false;
 		}
 		if(($this->position + $bytes) > $this->block->getSize()) {
@@ -119,7 +120,11 @@ class BlockStream implements Stream {
 		if($this->buffer === NULL) {
 			$this->buffer = $this->readSector($this->currentSector);
 			$this->positionInSector = 0;
-		} else if($this->positionInSector >= strlen($this->buffer)) {
+        } else if($this->positionInSector >= strlen($this->buffer)) {
+            if(!isset($this->sectors[$this->currentSector->getIndex() + 1])) {
+		        return false;
+            }
+
 			$this->currentSector = $this->sectors[$this->currentSector->getIndex() + 1];
 			$this->buffer = $this->readSector($this->currentSector);
 			$this->positionInSector = 0;
@@ -157,23 +162,28 @@ class BlockStream implements Stream {
 	// -----------------------------------------------------------------------------------------------------------------
 
 	private function readSector(Sector $sector) {
-		$this->stream->seek($this->file->getUserData()->getHeaderOffset()
+		$this->stream->seek($this->file->getUserDataOffset()
 			+ $this->block->getFilePos()
 			+ $sector->getStart());
 
-		$compressedStream = $this->createCompressedStream();
-		return $compressedStream->readBytes($sector->getLength());
+		$compressedStream = $this->createCompressedStream($sector);
+		return $compressedStream->readBytes($this->block->getSize());
 	}
 
-	private function createCompressedStream() {
+	private function createCompressedStream(Sector $sector) {
 		$stream = $this->stream;
 
-		if($this->block->isCompressed() && $this->block->getSize() > $this->block->getCompressedSize()) {
+        if($this->block->isCompressed() && $this->block->getSize() > $this->block->getCompressedSize()) {
 			$parser = new BinaryStreamParser($this->stream);
 			$compressionType = $parser->readByte();
 			switch ($compressionType) {
 				case 0x00: return $stream;
-				case 0x02: return new CompressedStream($stream, new DeflateCompression());
+                case 0x02: {
+                    $len = $parser->readUInt16();
+                    $blockData = $stream->readBytes($len);
+                    return new MemoryStream(gzinflate($blockData));
+                }
+//				case 0x02: return new CompressedStream($stream, new DeflateCompression());
 				case 0x10: return new CompressedStream($stream, new BZIPCompression());
 				default:
 					throw new CompressionException(sprintf('Invalid compression format: %s', $compressionType));

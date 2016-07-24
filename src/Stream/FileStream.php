@@ -40,14 +40,22 @@ class FileStream implements Stream {
 		$this->handle = fopen($file, 'r');
 	}
 
+    public function __clone() {
+        $this->handle = fopen($this->file, 'r');
+    }
+
+    function __destruct() {
+        $this->close();
+    }
+
 	// -----------------------------------------------------------------------------------------------------------------
 
 	/**
 	 * {@inheritdoc}
 	 */
 	public function close() {
-		fclose($this->handle);
-	}
+		@fclose($this->handle);
+    }
 
 	/**
 	 * {@inheritdoc}
@@ -82,12 +90,6 @@ class FileStream implements Stream {
 	 */
 	public function eof() {
 		return feof($this->handle);
-	}
-
-	// -----------------------------------------------------------------------------------------------------------------
-
-	public function __clone() {
-		return new FileStream($this->file);
 	}
 
 }
