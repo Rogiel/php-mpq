@@ -13,6 +13,7 @@ The recommended way of installing this library is using Composer.
     use Rogiel\MPQ\MPQFile;
     
     $file = MPQFile::parseFile(__DIR__.'/test.SC2Replay');
+    $file->parse();
     $stream = $file->openStream('replay.details');
     while($data = $stream->readBytes(100)) {
     	echo $data;
